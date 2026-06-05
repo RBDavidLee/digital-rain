@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Digital Rain</title>
+    <style>
+        /* Reset margins and hide scrollbars */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrixCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Make the canvas full screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Characters to use (Katana, digits, and Latin letters)
+        const alphabet = "ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        
+        const fontSize = 16;
+        // Calculate how many columns can fit across the screen
+        const columns = Math.floor(canvas.width / fontSize);
+
+        // An array to track the y-coordinate of the drop for each column
+        const rainDrops = [];
+
+        // Initialize each column's starting Y position at the top of the screen (y = 1)
+        for (let x = 0; x < columns; x++) {
+            rainDrops[x] = 1;
+        }
+
+        const draw = () => {
+            // Draw a translucent black rectangle over the whole screen to create the fading trail effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Set the font style and green color for the text
+            ctx.fillStyle = '#0F0'; 
+            ctx.font = fontSize + 'px monospace';
+
+            // Loop through every column
+            for (let i = 0; i < rainDrops.length; i++) {
+                // Pick a random character
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                
+                // x-coordinate is column index multiplied by font size
+                const x = i * fontSize;
+                // y-coordinate is the current drop position multiplied by font size
+                const y = rainDrops[i] * fontSize;
+
+                // Optional: Make the very leading character of a drop white for realism
+                if (Math.random() > 0.98) {
+                    ctx.fillStyle = '#FFF';
+                } else {
+                    ctx.fillStyle = '#0F0';
+                }
+
+                // Draw the character
+                ctx.fillText(text, x, y);
+
+                // If the drop has reached the bottom of the screen, 
+                // randomly reset it to the top to stagger the loop
+                if (y > canvas.height && Math.random() > 0.975) {
+                    rainDrops[i] = 0;
+                }
+                
+                // Move the drop down by 1 unit
+                rainDrops[i]++;
+            }
+        };
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const newColumns = Math.floor(canvas.width / fontSize);
+            while (rainDrops.length < newColumns) rainDrops.push(1);
+        });
+
+        // Run the draw function roughly every 30 milliseconds
+        setInterval(draw, 30);
+    </script>
+</body>
+</html>
