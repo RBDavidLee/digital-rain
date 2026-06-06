@@ -3,16 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Digital Rain</title>
+    <title>Matrix Digital Rain & Terminal</title>
     <style>
         /* Reset margins and hide scrollbars */
-        body {
+        body, html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             background-color: black;
+            font-family: 'Courier New', Courier, monospace;
         }
+
         canvas {
             display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Terminal Window Container */
+        .terminal-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 400px;
+            max-width: 90vw;
+            max-height: 80vh;
+            background-color: rgba(0, 5, 0, 0.85);
+            border: 2px solid #0F0;
+            box-shadow: 0 0 20px #0F0;
+            border-radius: 5px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Terminal Header Bar */
+        .terminal-header {
+            background-color: #021a02;
+            border-bottom: 1px solid #0F0;
+            padding: 8px 12px;
+            color: #0F0;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #0F0;
+            border-radius: 50%;
+            margin-left: 5px;
+            opacity: 0.7;
+        }
+
+        /* Terminal Output Area */
+        .terminal-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            color: #0F0;
+            font-size: 15px;
+            line-height: 1.4;
+            text-shadow: 0 0 2px rgba(0, 255, 0, 0.5);
+        }
+
+        /* Custom Scrollbar for the Terminal */
+        .terminal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: #023a02;
+            border-radius: 4px;
+        }
+        .terminal-body::-webkit-scrollbar-thumb:hover {
+            background: #0F0;
+        }
+
+        /* Input Prompt Row */
+        .input-line {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .prompt {
+            color: #0F0;
+            margin-right: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: #FFF; /* White text for active input clarity, matching the rain highlights */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            width: 100%;
+            outline: none;
+            text-shadow: 0 0 3px #FFF;
+        }
+
+        .system-msg {
+            color: #88ff88;
+        }
+
+        .error-msg {
+            color: #ff3333;
+            text-shadow: 0 0 2px #ff0000;
         }
     </style>
 </head>
@@ -20,70 +130,68 @@
 
     <canvas id="matrixCanvas"></canvas>
 
+    <div class="terminal-container" onclick="focusInput()">
+        <div class="terminal-header">
+            <span>NEXUS_TERMINAL_v1.04</span>
+            <div class="header-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="terminal-body" id="terminalBody">
+            <div class="system-msg">Wake up, Neo...</div>
+            <div class="system-msg">The Matrix has you.</div>
+            <div class="system-msg">Type 'help' to see available protocols.</div>
+            <br>
+            <div class="input-line">
+                <span class="prompt">operator@matrix:~$</span>
+                <input type="text" id="cmdInput" class="terminal-input" autofocus autocomplete="off" spellcheck="false">
+            </div>
+        </div>
+    </div>
+
     <script>
+        // --- MATRIX RAIN CODE ---
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Make the canvas full screen
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Characters to use (Katana, digits, and Latin letters)
         const alphabet = "ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        
         const fontSize = 16;
-        // Calculate how many columns can fit across the screen
-        const columns = Math.floor(canvas.width / fontSize);
-
-        // An array to track the y-coordinate of the drop for each column
+        let columns = Math.floor(canvas.width / fontSize);
         const rainDrops = [];
 
-        // Initialize each column's starting Y position at the top of the screen (y = 1)
         for (let x = 0; x < columns; x++) {
             rainDrops[x] = 1;
         }
 
         const draw = () => {
-            // Draw a translucent black rectangle over the whole screen to create the fading trail effect
             ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Set the font style and green color for the text
-            ctx.fillStyle = '#0F0'; 
             ctx.font = fontSize + 'px monospace';
 
-            // Loop through every column
             for (let i = 0; i < rainDrops.length; i++) {
-                // Pick a random character
                 const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-                
-                // x-coordinate is column index multiplied by font size
                 const x = i * fontSize;
-                // y-coordinate is the current drop position multiplied by font size
                 const y = rainDrops[i] * fontSize;
 
-                // Optional: Make the very leading character of a drop white for realism
                 if (Math.random() > 0.98) {
                     ctx.fillStyle = '#FFF';
                 } else {
                     ctx.fillStyle = '#0F0';
                 }
 
-                // Draw the character
                 ctx.fillText(text, x, y);
 
-                // If the drop has reached the bottom of the screen, 
-                // randomly reset it to the top to stagger the loop
                 if (y > canvas.height && Math.random() > 0.975) {
                     rainDrops[i] = 0;
                 }
-                
-                // Move the drop down by 1 unit
                 rainDrops[i]++;
             }
         };
 
-        // Handle window resizing
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -91,8 +199,78 @@
             while (rainDrops.length < newColumns) rainDrops.push(1);
         });
 
-        // Run the draw function roughly every 30 milliseconds
         setInterval(draw, 30);
+
+
+        // --- TERMINAL COMMAND LOGIC ---
+        const cmdInput = document.getElementById('cmdInput');
+        const terminalBody = document.getElementById('terminalBody');
+
+        // Automatically keep the text input focused when clicking inside the terminal
+        function focusInput() {
+            cmdInput.focus();
+        }
+
+        // Listen for the Enter key to execute commands
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const commandText = cmdInput.value.trim();
+                if (commandText !== '') {
+                    handleCommand(commandText);
+                }
+                cmdInput.value = ''; // Clear input field
+            }
+        });
+
+        function handleCommand(cmd) {
+            // 1. Replicate the submitted command onto the screen display
+            const historyLine = document.createElement('div');
+            historyLine.innerHTML = `<span class="prompt">operator@matrix:~$</span> <span style="color: #fff;">${escapeHTML(cmd)}</span>`;
+            
+            // Insert history before the current active input row
+            const activeInputLine = document.querySelector('.input-line');
+            terminalBody.insertBefore(historyLine, activeInputLine);
+
+            // 2. Core command router (Add your custom command strings/functions here!)
+            const cleanCmd = cmd.toLowerCase();
+            let responseHTML = '';
+
+            if (cleanCmd === 'help') {
+                responseHTML = `
+                    <div class="system-msg">Available Protocols:</div>
+                    &nbsp;&nbsp;<b>help</b>&nbsp;&nbsp;&nbsp;&nbsp;- Display connection system options.<br>
+                    &nbsp;&nbsp;<b>clear</b>&nbsp;&nbsp;&nbsp;- Purge screen buffers.<br>
+                    &nbsp;&nbsp;<b>matrix</b>&nbsp;&nbsp;- Check framework node status.
+                `;
+            } else if (cleanCmd === 'clear') {
+                // Wipe history elements, leaving only the active prompt line
+                while (terminalBody.childNodes.length > 2) {
+                    terminalBody.removeChild(terminalBody.firstChild);
+                }
+                return; // Exit early to bypass scrolling logic
+            } else if (cleanCmd === 'matrix') {
+                responseHTML = `<div class="system-msg">System: Active. Signal: Stable. The simulation is running smoothly.</div>`;
+            } else {
+                responseHTML = `<div class="error-msg">Error: Command "${escapeHTML(cmd)}" unrecognized by Zion mainframe.</div>`;
+            }
+
+            // 3. Append the response if any exists
+            if (responseHTML) {
+                const responseDiv = document.createElement('div');
+                responseDiv.innerHTML = responseHTML;
+                terminalBody.insertBefore(responseDiv, activeInputLine);
+            }
+
+            // 4. Auto-scroll to the bottom of the container
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        // Helper to safely prevent text commands from breaking HTML execution elements
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
     </script>
 </body>
 </html>
