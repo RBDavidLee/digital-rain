@@ -1,149 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Digital Rain & Terminal</title>
-    <style>
-        /* Reset margins and hide scrollbars */
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: black;
-            font-family: 'Courier New', Courier, monospace;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS Terminal v1.04</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #000; font-family: 'Courier New', Courier, monospace;
+    }
+    canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
 
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
+    #tw {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; max-width: 92vw; height: 400px;
+      background: rgba(0,5,0,0.88);
+      border: 1.5px solid #0f0;
+      box-shadow: 0 0 24px rgba(0,255,0,0.4);
+      border-radius: 6px;
+      display: flex; flex-direction: column; overflow: hidden;
+      opacity: 0; transition: opacity 0.7s ease;
+      pointer-events: none; z-index: 10;
+    }
+    #tw.active { opacity: 1; pointer-events: auto; }
 
-        /* Terminal Window Container - Hidden by default */
-        .terminal-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 600px;
-            height: 400px;
-            max-width: 90vw;
-            max-height: 80vh;
-            background-color: rgba(0, 5, 0, 0.85);
-            border: 2px solid #0F0;
-            box-shadow: 0 0 20px #0F0;
-            border-radius: 5px;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            pointer-events: none; /* Block clicks until visible */
-        }
+    #th {
+      background: #021a02; border-bottom: 1px solid #0f0;
+      padding: 8px 14px; color: #0f0; font-size: 13px;
+      font-weight: bold; letter-spacing: 1px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #th .dots span {
+      display: inline-block; width: 8px; height: 8px;
+      background: #0f0; border-radius: 50%; margin-left: 5px; opacity: .7;
+    }
 
-        .terminal-container.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
+    #tb {
+      flex: 1; padding: 14px 16px; overflow-y: auto;
+      color: #0f0; font-size: 14px; line-height: 1.55;
+      font-family: 'Courier New', monospace;
+    }
+    #tb::-webkit-scrollbar { width: 6px; }
+    #tb::-webkit-scrollbar-thumb { background: #023a02; border-radius: 3px; }
+    #tb::-webkit-scrollbar-thumb:hover { background: #0f0; }
 
-        /* Terminal Header Bar */
-        .terminal-header {
-            background-color: #021a02;
-            border-bottom: 1px solid #0F0;
-            padding: 8px 12px;
-            color: #0F0;
-            font-size: 14px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-dots span {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background-color: #0F0;
-            border-radius: 50%;
-            margin-left: 5px;
-            opacity: 0.7;
-        }
-
-        /* Terminal Output Area */
-        .terminal-body {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            color: #0F0;
-            font-size: 15px;
-            line-height: 1.4;
-            text-shadow: 0 0 2px rgba(0, 255, 0, 0.5);
-        }
-
-        /* Custom Scrollbar for the Terminal */
-        .terminal-body::-webkit-scrollbar {
-            width: 8px;
-        }
-        .terminal-body::-webkit-scrollbar-thumb {
-            background: #023a02;
-            border-radius: 4px;
-        }
-        .terminal-body::-webkit-scrollbar-thumb:hover {
-            background: #0F0;
-        }
-
-        /* Input Prompt Row - Hidden until typing completes */
-        .input-line {
-            display: none;
-            align-items: center;
-            margin-top: 5px;
-        }
-
-        .prompt {
-            color: #0F0;
-            margin-right: 10px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        .terminal-input {
-            background: transparent;
-            border: none;
-            color: #FFF;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 15px;
-            width: 100%;
-            outline: none;
-            text-shadow: 0 0 3px #FFF;
-        }
-
-        .system-msg {
-            color: #88ff88;
-            margin-bottom: 4px;
-        }
-
-        .error-msg {
-            color: #ff3333;
-            text-shadow: 0 0 2px #ff0000;
-        }
-    </style>
+    #pl { display: flex; align-items: center; padding: 4px 16px 12px; }
+    #pr { color: #0f0; margin-right: 8px; font-size: 13px; white-space: nowrap; }
+    #ci {
+      background: transparent; border: none; color: #fff;
+      outline: none; width: 100%;
+      font-family: 'Courier New', monospace; font-size: 14px;
+      caret-color: #0f0;
+    }
+    .sys { color: #88ff88; }
+    .err { color: #ff4444; }
+    .dim { color: #0a8a0a; }
+  </style>
 </head>
 <body>
 
-    <canvas id="matrixCanvas"></canvas>
+<canvas id="mc"></canvas>
 
-    <div class="terminal-container" id="terminalWindow" onclick="focusInput()">
-        <div class="terminal-header">
-            <span>NEXUS_TERMINAL_v1.04</span>
-            <div class="header-dots">
-                <span></span><span></span><span></span>
-            </div>
-        </div>
-        <div class="terminal-body" id="terminalBody">
+<div id="tw">
+  <div id="th">
+    <span>NEXUS_TERMINAL_v1.04</span>
+    <div class="dots"><span></span><span></span><span></span></div>
+  </div>
+  <div id="tb"><div id="tc"></div></div>
+  <div id="pl" style="display:none">
+    <span id="pr">operator@matrix:~$</span>
+    <input id="ci" type="text" autocomplete="off" spellcheck="false" />
+  </div>
+</div>
+
+<script>
+(function () {
+  const canvas = document.getElementById('mc');
+  const ctx = canvas.getContext('2d');
+  const term = document.getElementById('tw');
+  const body = document.getElementById('tb');
+  const container = document.getElementById('tc');
+  const promptLine = document.getElementById('pl');
+  const input = document.getElementById('ci');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const fontSize = 14;
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*';
+  let drops = [];
+
+  function initDrops() {
+    const cols = Math.floor(canvas.width / fontSize);
+    drops = Array(cols).fill(1);
+  }
+  initDrops();
+  window.addEventListener('resize', initDrops);
+
+  function drawMatrix() {
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0f0';
+    ctx.font = fontSize + 'px monospace';
+    const cols = Math.floor(canvas.width / fontSize);
+    while (drops.length < cols) drops.push(1);
+    for (let i = 0; i < cols; i++) {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }
+
+  setInterval(drawMatrix, 40);
+
+  setTimeout(() => { term.classList.add('active'); startTypewriter(); }, 1800);
+
+  const bootLines = [
+    { text: 'NEXUS TERMINAL v1.04', cls: '' },
+    { text: '────────────────────────────────────', cls: 'dim' },
+    { text: 'Initializing secure channel...', cls: 'sys' },
+    { text: '[OK] Encryption layer loaded', cls: 'sys' },
+    { text: '[OK] Neural interface connected', cls: 'sys' },
+    { text: '[OK] Matrix link established', cls: 'sys' },
+    { text: '', cls: '' },
+    { text: 'Access granted. Welcome, operator.', cls: '' },
+    { text: 'Type "help" for available commands.', cls: 'dim' },
+    { text: '', cls: '' },
+  ];
+
+  function startTypewriter() {
+    let lineIdx = 0;
+    function nextLine() {
+      if (lineIdx >= bootLines.length) {
+        promptLine.style.display = 'flex';
+        input.focus();
+        return;
+      }
+      const { text, cls } = bootLines[lineIdx++];
+      const el = document.createElement('div');
+      if (cls) el.className = cls;
+      container.appendChild(el);
+      let i = 0;
+      function typeChar() {
+        if (i < text.length) {
+          el.textContent += text[i++];
+          body.scrollTop = body.scrollHeight;
+          setTimeout(typeChar, 18 + Math.random() * 20);
+        } else {
+          setTimeout(nextLine, 80);
+        }
+      }
+      if (text.length === 0) { setTimeout(nextLine, 80); } else { typeChar(); }
+    }
+    nextLine();
+  }
+
+  const commands = {
+    help: () => [
+      { t: 'Available commands:', c: '' },
+      { t: '  help      - show this message', c: 'dim' },
+      { t: '  whoami    - display current user', c: 'dim' },
+      { t: '  status    - system status', c: 'dim' },
+      { t: '  ping      - test connection', c: 'dim' },
+      { t: '  date      - current timestamp', c: 'dim' },
+      { t: '  clear     - clear terminal', c: 'dim' },
+      { t: '  exit      - disconnect session', c: 'dim' },
+    ],
+    whoami: () => [{ t: 'operator [uid=1337] [matrix-node-7]', c: 'sys' }],
+    status: () => [
+      { t: 'SYSTEM STATUS', c: '' },
+      { t: '  Matrix Link:    ACTIVE ▮', c: 'sys' },
+      { t: '  Encryption:     AES-256 ▮', c: 'sys' },
+      { t: '  Neural Load:    ' + (40 + Math.floor(Math.random() * 40)) + '%', c: 'sys' },
+      { t: '  Uptime:         ' + Math.floor(Math.random() * 999) + 'h', c: 'sys' },
+    ],
+    ping: () => [
+      { t: 'Pinging matrix-core...', c: 'dim' },
+      { t: 'Reply: ' + (Math.floor(Math.random() * 8) + 1) + 'ms — Connection stable.', c: 'sys' },
+    ],
+    date: () => [{ t: new Date().toString(), c: 'sys' }],
+    clear: () => { container.innerHTML = ''; return []; },
+    exit: () => {
+      setTimeout(() => { term.classList.remove('active'); }, 1200);
+      return [{ t: 'Disconnecting... goodbye, operator.', c: 'err' }];
+    },
+  };
+
+  function handleCmd(raw) {
+    const cmd = raw.trim().toLowerCase();
+    const echo = document.createElement('div');
+    echo.className = 'dim';
+    echo.textContent = 'operator@matrix:~$ ' + raw;
+    container.appendChild(echo);
+
+    if (!cmd) { body.scrollTop = body.scrollHeight; return; }
+
+    const handler = commands[cmd];
+    if (handler) {
+      const lines = handler();
+      lines.forEach(({ t, c }) => {
+        const d = document.createElement('div');
+        if (c) d.className = c;
+        d.textContent = t;
+        container.appendChild(d);
+      });
+    } else {
+      const d = document.createElement('div');
+      d.className = 'err';
+      d.textContent = 'command not found: ' + cmd + '. Type "help" for options.';
+      container.appendChild(d);
+    }
+    body.scrollTop = body.scrollHeight;
+  }
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      handleCmd(input.value);
+      input.value = '';
+    }
+  });
+
+  document.addEventListener('click', () => input.focus());
+})();
+</script>
+</body>
+</html>
